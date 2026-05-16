@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lumita - Punto de Venta</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+body { background: #f5f5f5; color: #333; }
+header { background: #d63384; color: white; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; }
+.container { display: flex; height: calc(100vh - 60px); }
+
+.products {
+  flex: 2;
+  padding: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background-color: #eee;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+}
+.products::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(255, 255, 255, 0.65);
+  z-index: 0;
+}
+.products > * {
+  position: relative;
+  z-index: 1;
+}
+.products.full { flex: 1 1 100%; }
+
+.cart {
+  flex: 1;
+  position: relative;
+  border-left: 2px solid rgba(221, 221, 221, 0.3);
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: transparent;
+}
+
+.cart::before{
+  content: '';
+  position: absolute;
+  top: 0;left: 0;right: 0;bottom: 0;
+  background-image: url(fondo-lumita.jpeg);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.2;
+  z-index: 0;
+}
+
+/* FIX: Esto hace que el botón quede clickeable sobre la imagen */
+.cart > * {
+  position: relative;
+  z-index: 1;
+}
+
+h3 { margin-bottom: 10px; color: #d63384; }
+
+.search-box {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  font-size: 16px;
+  outline: none;
+  transition: 0.2s;
+  background: white;
+}
+.search-box:focus {
+  border-color: #d63384;
+}
+
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; flex: 1; }
+.product-grid.full-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.product-btn { background: rgba(255, 255, 255, 0.50);
+   border: 2px solid #d63384;
+    border-radius: 10px;
+     padding: 15px 10px;
+      cursor: pointer;
+       text-align: center;
+        transition: 0.2s;
+      backdrop-filter: blur(4px);}
+.product-btn:hover { background: #d63384; color: white; }
+.product-btn strong { display: block; font-size: 16px; }
+.no-results { text-align: center; color: #999; padding: 40px; font-size: 16px; background: white; border-radius: 10px; }
+
+.btn-tortas-enteras {
+  width: 100%;
+  padding: 20px;
+  margin-top: 15px;
+  background: white;
+  border: 3px solid #d63384;
+  border-radius: 12px;
+  font-size: 22px;
+  font-weight: bold;
+  color: #d63384;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.btn-tortas-enteras:hover {
+  background: #d63384;
+  color: white;
+}
+
+.btn-volver {
+  padding: 12px 25px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-bottom: 15px;
+}
+
+.cart-items { flex: 1; overflow-y: auto; margin: 10px 0; }
+.cart-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+.cart-item.envio { color: #6f42c1; font-weight: bold; }
+.cart-item.manual { color: #ff9800; font-style: italic; }
+.cart-item button { background: #ff4d4d; color: white; border: none; padding: 2px 6px; border-radius: 5px; cursor: pointer; }
+.total { font-size: 24px; font-weight: bold; text-align: right; margin: 10px 0; }
+.pay-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pay-btns button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; }
+.btn-cash { background: #28a745; }
+.btn-mp { background: #00a8e8; }
+.btn-envio { width: 100%; margin-bottom: 10px; background:#6f42c1; padding: 10px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; }
+.btn-envio.active { background: #dc3545; }
+.clear-btn { background: #dc3545; width: 100%; margin-top: 8px; padding: 10px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; }
+nav { background: white; padding: 10px; display: flex; gap: 10px; border-bottom: 2px solid #ddd; }
+nav button { padding: 8px 15px; border: 2px solid #d63384; background: white; color: #d63384; border-radius: 6px; cursor: pointer; font-weight: bold; }
+nav button.active { background: #d63384; color: white; }
+.tab { display: none; }
+.tab.active { display: block; }
+.report-box { background: white; padding: 15px; margin: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.report-box h4 { color: #d63384; margin-bottom: 8px; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+table th, table td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+table th { background: #f8f8f8; }
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px; }
+.modal-content h2 { margin-bottom: 20px; color: #d63384; }
+.mode-btn { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; color: white; }
+.btn-pedidos { background: #ff3008; }
+.btn-particular { background: #28a745; }
+.mode-badge { background: #d63384; color: white; padding: 5px 10px; border-radius: 20px; font-size: 14px; display: inline-block; margin-bottom: 10px; }
+.export-btn { background: #17a2b8; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-top: 10px; margin-right: 5px; }
+.delete-btn { background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.summary { display: flex; gap: 20px; margin-bottom: 15px; }
+.summary div { background: #f8f8f8; padding: 10px; border-radius: 6px; flex: 1; }
+
+/* Producto manual */
+.manual-product {
+  border-top: 1px solid #ddd;
+  padding-top: 10px;
+  margin-top: 10px;
+}
+.manual-product h4 {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+.manual-product input {
+  width: 100%;
+  padding: 8px;
+  margin-bottom: 6px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.manual-product button {
+  width: 100%;
+  padding: 10px;
+  background: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.manual-product button:hover {
+  background: #e68900;
+}
+</style>
+</head>
+<body>
+
+<div class="modal" id="modeModal">
+  <div class="modal-content">
+    <h2>Selecciona el tipo de venta</h2>
+    <button class="mode-btn btn-pedidos" onclick="setMode('pedidos')">Pedidos Ya</button>
+    <button class="mode-btn btn-particular" onclick="setMode('particular')">Venta Particular</button>
+  </div>
+</div>
+
+<div class="modal" id="passModal" style="display:none;">
+  <div class="modal-content">
+    <h2>Ingresa contraseña para borrar</h2>
+    <input type="password" id="passInput" placeholder="Contraseña" style="padding:10px; width:100%; margin-bottom:10px;">
+    <button onclick="confirmarBorrado()" style="padding:10px 20px; background:#dc3545; color:white; border:none; border-radius:6px; margin-right:5px;">Borrar</button>
+    <button onclick="cerrarPassModal()" style="padding:10px 20px; background:#6c757d; color:white; border:none; border-radius:6px;">Cancelar</button>
+  </div>
+</div>
+
+<header>🍰 Lumita Pastelería <span id="modeBadge" class="mode-badge" style="display:none;"></span></header>
+
+<nav>
+  <button class="tab-btn active" onclick="showTab('venta')">Venta</button>
+  <button class="tab-btn" onclick="showTab('reportes')">Reportes</button>
+  <button class="tab-btn" onclick="showTab('productos')">Productos</button>
+  <button onclick="changeMode()" style="margin-left:auto; background:#ffc107; color:#333;">Cambiar Modo</button>
+</nav>
+
+<div class="tab active" id="venta">
+  <div class="container">
+    <div class="products" id="productsContainer">
+      <div id="vistaNormal">
+        <input type="text" class="search-box" id="searchInput" placeholder="🔍 Buscar producto..." oninput="buscarProductos()">
+        <div class="product-grid" id="productGrid"></div>
+        <button class="btn-tortas-enteras" id="btnTortasEnteras" style="display:none;" onclick="abrirTortasEnteras()">
+          TORTAS ENTERAS
+        </button>
+      </div>
+
+      <div id="vistaTortas" style="display:none; flex-direction:column; height:100%;">
+        <button class="btn-volver" onclick="cerrarTortasEnteras()">← Volver</button>
+        <input type="text" class="search-box" id="searchInputTortas" placeholder="🔍 Buscar torta..." oninput="buscarTortas()">
+        <div class="product-grid full-grid" id="productGridTortas" style="flex:1;"></div>
+      </div>
+    </div>
+
+    <div class="cart">
+      <h3>Carrito</h3>
+      <button class="btn-envio" id="btnEnvio" style="display:none;" onclick="toggleEnvio()">
+        + Agregar Envío $2500
+      </button>
+      <div class="cart-items" id="cartItems"></div>
+      <div class="total">Total: $<span id="total">0</span></div>
+      
+      <!-- PRODUCTO MANUAL -->
+      <div class="manual-product">
+        <h4>Producto manual</h4>
+        <input type="text" id="manualNombre" placeholder="Nombre del producto">
+        <input type="number" id="manualPrecio" placeholder="Precio" min="0">
+        <button onclick="addManualProduct()">Agregar</button>
+      </div>
+
+      <div class="pay-btns">
+        <button class="btn-cash" onclick="checkout('Efectivo')">Efectivo</button>
+        <button class="btn-mp" onclick="checkout('Mercado Pago')">Mercado Pago</button>
+      </div>
+      <button class="clear-btn" onclick="clearCart()">Vaciar Carrito</button>
+    </div>
+  </div>
+</div>
+
+<div class="tab" id="reportes">
+  <div class="report-box">
+    <h4>Reporte del Día</h4>
+    <div id="reporteDiario"></div>
+    <button class="export-btn" onclick="exportar('diario')">Descargar Excel</button>
+  </div>
+  <div class="report-box">
+    <h4>Reporte Semanal</h4>
+    <div id="reporteSemanal"></div>
+    <button class="export-btn" onclick="exportar('semanal')">Descargar Excel</button>
+  </div>
+  <div class="report-box">
+    <h4>Reporte Mensual</h4>
+    <div id="reporteMensual"></div>
+    <button class="export-btn" onclick="exportar('mensual')">Descargar Excel</button>
+  </div>
+</div>
+
+<div class="tab" id="productos">
+  <div class="report-box">
+    <h4>Gestionar Productos</h4>
+    <input type="text" id="prodNombre" placeholder="Nombre" style="padding:8px; width:25%; margin-right:5px;">
+    <select id="prodCategoria" style="padding:8px; width:18%; margin-right:5px;">
+      <option value="normal">Normal</option>
+      <option value="tortas_enteras">Tortas Enteras</option>
+    </select>
+    <input type="number" id="prodPrecioP" placeholder="Precio Particular" style="padding:8px; width:18%; margin-right:5px;">
+    <input type="number" id="prodPrecioPY" placeholder="Precio Pedidos Ya" style="padding:8px; width:18%; margin-right:5px;">
+    <button onclick="addProducto()" style="padding:8px 15px; background:#28a745; color:white; border:none; border-radius:6px;">Agregar</button>
+    <table id="tablaProductos"></table>
+  </div>
+</div>
+
+<script>
+let modoVenta = localStorage.getItem('modoVenta') || null;
+let productos = JSON.parse(localStorage.getItem('productos')) || [
+  {id: 1, nombre: "Rogel - porción", categoria: "normal", precioParticular: 7000, precioPedidos: 8500},
+  {id: 2, nombre: "Tiramisú - porción", categoria: "normal", precioParticular: 7000, precioPedidos: 8500},
+  {id: 3, nombre: "Torta Chocolate 1kg", categoria: "tortas_enteras", precioParticular: 4500, precioPedidos: 5500},
+  {id: 4, nombre: "Torta Frutilla 1kg", categoria: "tortas_enteras", precioParticular: 4800, precioPedidos: 5800}
+];
+
+let carrito = [];
+let ventas = JSON.parse(localStorage.getItem('ventas')) || [];
+let ventaABorrar = null;
+let tieneEnvio = false;
+const COSTO_ENVIO = 2500;
+
+window.onload = function() {
+  if(!modoVenta) {
+    document.getElementById('modeModal').style.display = 'flex';
+  } else {
+    document.getElementById('modeModal').style.display = 'none';
+    updateModeBadge();
+    actualizarVista();
+  }
+}
+
+function setMode(modo) {
+  modoVenta = modo;
+  localStorage.setItem('modoVenta', modo);
+  document.getElementById('modeModal').style.display = 'none';
+  updateModeBadge();
+  actualizarVista();
+  clearCart();
+}
+
+function changeMode() {
+  if(confirm('¿Cambiar tipo de venta? Se vaciará el carrito actual.')) {
+    modoVenta = null;
+    localStorage.removeItem('modoVenta');
+    document.getElementById('modeModal').style.display = 'flex';
+  }
+}
+
+function updateModeBadge() {
+  const badge = document.getElementById('modeBadge');
+  badge.style.display = 'inline-block';
+  badge.innerText = modoVenta === 'pedidos'? 'Pedidos Ya' : 'Venta Particular';
+}
+
+function saveData() {
+  localStorage.setItem('productos', JSON.stringify(productos));
+  localStorage.setItem('ventas', JSON.stringify(ventas));
+}
+
+function showTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tab).classList.add('active');
+  event.target.classList.add('active');
+  if(tab === 'reportes') cargarReportes();
+  if(tab === 'productos') cargarProductos();
+}
+
+function actualizarVista() {
+  document.getElementById('btnTortasEnteras').style.display = (modoVenta === 'particular')? 'block' : 'none';
+  document.getElementById('searchInput').value = '';
+  renderProductos();
+}
+
+function buscarProductos() {
+  const busqueda = document.getElementById('searchInput').value.toLowerCase();
+  renderProductos(busqueda);
+}
+
+function buscarTortas() {
+  const busqueda = document.getElementById('searchInputTortas').value.toLowerCase();
+  abrirTortasEnteras(busqueda);
+}
+
+function abrirTortasEnteras(filtro = '') {
+  document.getElementById('vistaNormal').style.display = 'none';
+  document.getElementById('vistaTortas').style.display = 'flex';
+  document.getElementById('productsContainer').classList.add('full');
+
+  const grid = document.getElementById('productGridTortas');
+  grid.innerHTML = '';
+  const tortas = productos.filter(p =>
+    p.categoria === 'tortas_enteras' &&
+    p.nombre.toLowerCase().includes(filtro)
+  );
+
+  if(tortas.length === 0) {
+    grid.innerHTML = '<div class="no-results">No se encontraron tortas</div>';
+    return;
+  }
+
+  tortas.forEach(p => {
+    const precio = modoVenta === 'pedidos'? p.precioPedidos : p.precioParticular;
+    grid.innerHTML += `
+      <div class="product-btn" onclick="addToCart(${p.id}); cerrarTortasEnteras();"
+           style="padding:25px;">
+        <strong>${p.nombre}</strong>
+        <span style="font-size:20px; margin-top:8px;">$${precio}</span>
+      </div>
+    `;
+  });
+}
+
+function cerrarTortasEnteras() {
+  document.getElementById('vistaTortas').style.display = 'none';
+  document.getElementById('vistaNormal').style.display = 'block';
+  document.getElementById('productsContainer').classList.remove('full');
+  document.getElementById('searchInputTortas').value = '';
+}
+
+function renderProductos(filtro = '') {
+  const grid = document.getElementById('productGrid');
+  grid.innerHTML = '';
+  const productosNormales = productos.filter(p =>
+    p.categoria!== 'tortas_enteras' &&
+    p.nombre.toLowerCase().includes(filtro)
+  );
+
+  if(productosNormales.length === 0) {
+    grid.innerHTML = '<div class="no-results">No se encontraron productos</div>';
+    return;
+  }
+
+  productosNormales.forEach(p => {
+    const precio = modoVenta === 'pedidos'? p.precioPedidos : p.precioParticular;
+    grid.innerHTML += `
+      <div class="product-btn" onclick="addToCart(${p.id})">
+        <strong>${p.nombre}</strong>
+        <span>$${precio}</span>
+      </div>
+    `;
+  });
+}
+
+function addToCart(id) {
+  const prod = productos.find(p => p.id === id);
+  const precio = modoVenta === 'pedidos'? prod.precioPedidos : prod.precioParticular;
+  const item = carrito.find(i => i.id === id);
+  if(item) item.cant++;
+  else carrito.push({...prod, precio: precio, cant: 1});
+  renderCart();
+}
+
+// PRODUCTO MANUAL
+function addManualProduct() {
+  const nombre = document.getElementById('manualNombre').value.trim();
+  const precio = parseFloat(document.getElementById('manualPrecio').value);
+
+  if (!nombre || !precio || precio <= 0) {
+    alert('Completá nombre y precio válido');
+    return;
+  }
+
+  carrito.push({
+    id: 'manual_' + Date.now(),
+    nombre: nombre,
+    precio: precio,
+    cant: 1,
+    manual: true
+  });
+
+  document.getElementById('manualNombre').value = '';
+  document.getElementById('manualPrecio').value = '';
+  renderCart();
+}
+
+function toggleEnvio() {
+  if(modoVenta!== 'particular') return;
+  tieneEnvio =!tieneEnvio;
+  const btn = document.getElementById('btnEnvio');
+  btn.textContent = tieneEnvio? 'Quitar Envío $2500' : '+ Agregar Envío $2500';
+  btn.classList.toggle('active');
+  renderCart();
+}
+
+function renderCart() {
+  const div = document.getElementById('cartItems');
+  div.innerHTML = '';
+  let subtotal = carrito.reduce((sum, i) => sum + i.precio * i.cant, 0);
+  let total = subtotal;
+
+  document.getElementById('btnEnvio').style.display = (modoVenta === 'particular')? 'block' : 'none';
+
+  carrito.forEach((item, i) => {
+    const claseExtra = item.manual ? 'manual' : '';
+    div.innerHTML += `
+      <div class="cart-item ${claseExtra}">
+        <span>${item.nombre} x${item.cant}</span>
+        <span>$${item.precio * item.cant} <button onclick="removeItem(${i})">X</button></span>
+      </div>
+    `;
+  });
+
+  if(tieneEnvio) {
+    total += COSTO_ENVIO;
+    div.innerHTML += `
+      <div class="cart-item envio">
+        <span>Envío</span>
+        <span>$${COSTO_ENVIO}</span>
+      </div>
+    `;
+  }
+
+  document.getElementById('total').innerText = total;
+}
+
+function removeItem(i) {
+  carrito.splice(i, 1);
+  renderCart();
+}
+
+function clearCart() {
+  carrito = [];
+  tieneEnvio = false;
+  document.getElementById('btnEnvio').textContent = '+ Agregar Envío $2500';
+  document.getElementById('btnEnvio').classList.remove('active');
+  renderCart();
+}
+
+function checkout(metodo) {
+  if(carrito.length === 0) return alert('El carrito está vacío');
+
+  const subtotal = carrito.reduce((sum, i) => sum + i.precio * i.cant, 0);
+  const total = subtotal + (tieneEnvio? COSTO_ENVIO : 0);
+
+  const venta = {
+    id: Date.now(),
+    fecha: new Date().toISOString(),
+    items: [...carrito],
+    subtotal: subtotal,
+    envio: tieneEnvio? COSTO_ENVIO : 0,
+    total: total,
+    metodo: metodo,
+    modoVenta: modoVenta === 'pedidos'? 'Pedidos Ya' : 'Venta Particular'
+  };
+
+  ventas.push(venta);
+  saveData();
+  alert(`Venta registrada!\nTotal: $${total}\nMétodo: ${metodo}`);
+  clearCart();
+}
+
+function cargarReportes() {
+  const ahora = new Date();
+  const hoy = ahora.toDateString();
+  const hace7dias = new Date(ahora);
+  hace7dias.setDate(ahora.getDate() - 7);
+  const mesActual = ahora.getMonth();
+  const añoActual = ahora.getFullYear();
+
+  const ventasHoy = ventas.filter(v => new Date(v.fecha).toDateString() === hoy);
+  const ventasSemana = ventas.filter(v => new Date(v.fecha) >= hace7dias);
+  const ventasMes = ventas.filter(v => {
+    const f = new Date(v.fecha);
+    return f.getMonth() === mesActual && f.getFullYear() === añoActual;
+  });
+
+  document.getElementById('reporteDiario').innerHTML = generarReporteDetalle(ventasHoy);
+  document.getElementById('reporteSemanal').innerHTML = generarReporteDetalle(ventasSemana);
+  document.getElementById('reporteMensual').innerHTML = generarReporteDetalle(ventasMes);
+}
+
+function generarReporteDetalle(lista) {
+  if(lista.length === 0) return '<p>No hay ventas registradas.</p>';
+
+  const total = lista.reduce((sum, v) => sum + v.total, 0);
+  const totalEnvio = lista.reduce((sum, v) => sum + (v.envio || 0), 0);
+
+  let html = '<div class="summary">';
+  html += `<div><strong>Ventas:</strong> ${lista.length}</div>`;
+  html += `<div><strong>Total:</strong> $${total}</div>`;
+  if(totalEnvio > 0) html += `<div><strong>Envío:</strong> $${totalEnvio}</div>`;
+  html += '</div>';
+
+  html += '<h4>Detalle de ventas:</h4>';
+  html += '<table><tr><th>Hora</th><th>Modo</th><th>Método</th><th>Productos</th><th>Envío</th><th>Total</th><th></th></tr>';
+
+  lista.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(v => {
+    const fecha = new Date(v.fecha);
+    const hora = fecha.toLocaleTimeString('es-AR', {hour: '2-digit', minute: '2-digit'});
+    const productos = v.items.map(i => `${i.nombre} x${i.cant}`).join(', ');
+    html += `
+      <tr>
+        <td>${hora}</td>
+        <td>${v.modoVenta}</td>
+        <td>${v.metodo}</td>
+        <td>${productos}</td>
+        <td>${v.envio > 0? '$'+v.envio : '-'}</td>
+        <td><strong>$${v.total}</strong></td>
+        <td><button class="delete-btn" onclick="pedirPassword(${v.id})">Borrar</button></td>
+      </tr>
+    `;
+  });
+  html += '</table>';
+  return html;
+}
+
+function pedirPassword(id) {
+  ventaABorrar = id;
+  document.getElementById('passModal').style.display = 'flex';
+  document.getElementById('passInput').value = '';
+  document.getElementById('passInput').focus();
+}
+
+function cerrarPassModal() {
+  document.getElementById('passModal').style.display = 'none';
+  ventaABorrar = null;
+}
+
+function confirmarBorrado() {
+  const pass = document.getElementById('passInput').value;
+  if(pass === '321') {
+    ventas = ventas.filter(v => v.id!== ventaABorrar);
+    saveData();
+    cargarReportes();
+    cerrarPassModal();
+    alert('Venta borrada correctamente');
+  } else {
+    alert('Contraseña incorrecta');
+    document.getElementById('passInput').value = '';
+  }
+}
+
+function exportar(periodo) {
+  const ahora = new Date();
+  let lista = [];
+  let nombreArchivo = '';
+
+  if(periodo === 'diario') {
+    lista = ventas.filter(v => new Date(v.fecha).toDateString() === ahora.toDateString());
+    nombreArchivo = `ventas_diario_${ahora.toISOString().split('T')[0]}`;
+  }
+  if(periodo === 'semanal') {
+    const hace7dias = new Date(ahora);
+    hace7dias.setDate(ahora.getDate() - 7);
+    lista = ventas.filter(v => new Date(v.fecha) >= hace7dias);
+    nombreArchivo = `ventas_semanal_${ahora.toISOString().split('T')[0]}`;
+  }
+  if(periodo === 'mensual') {
+    lista = ventas.filter(v => {
+      const f = new Date(v.fecha);
+      return f.getMonth() === ahora.getMonth() && f.getFullYear() === ahora.getFullYear();
+    });
+    nombreArchivo = `ventas_mensual_${ahora.getFullYear()}-${ahora.getMonth()+1}`;
+  }
+
+  if(lista.length === 0) return alert('No hay ventas para exportar');
+
+  let csv = 'Fecha,Hora,Modo Venta,Metodo Pago,Producto,Cantidad,Precio Unitario,Subtotal,Envio,Total Venta\n';
+  lista.forEach(v => {
+    const fecha = new Date(v.fecha);
+    const fechaStr = fecha.toLocaleDateString();
+    const horaStr = fecha.toLocaleTimeString();
+    v.items.forEach(item => {
+      csv += `${fechaStr},${horaStr},${v.modoVenta},${v.metodo},${item.nombre},${item.cant},${item.precio},${item.precio*item.cant},${v.envio || 0},${v.total}\n`;
+    });
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = nombreArchivo + '.csv';
+  link.click();
+}
+
+function cargarProductos() {
+  const tabla = document.getElementById('tablaProductos');
+  tabla.innerHTML = '<tr><th>Nombre</th><th>Categoría</th><th>Precio Particular</th><th>Precio Pedidos Ya</th><th>Acción</th></tr>';
+  productos.forEach((p, i) => {
+    tabla.innerHTML += `
+      <tr>
+        <td>${p.nombre}</td>
+        <td>${p.categoria === 'tortas_enteras'? 'Tortas Enteras' : 'Normal'}</td>
+        <td>$${p.precioParticular}</td>
+        <td>$${p.precioPedidos}</td>
+        <td><button onclick="deleteProducto(${i})" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:5px;">Borrar</button></td>
+      </tr>
+    `;
+  });
+}
+
+function addProducto() {
+  const nombre = document.getElementById('prodNombre').value;
+  const categoria = document.getElementById('prodCategoria').value;
+  const precioP = parseFloat(document.getElementById('prodPrecioP').value);
+  const precioPY = parseFloat(document.getElementById('prodPrecioPY').value);
+  if(!nombre ||!precioP ||!precioPY) return alert('Completa todos los campos');
+  productos.push({id: Date.now(), nombre, categoria, precioParticular: precioP, precioPedidos: precioPY});
+  saveData();
+  document.getElementById('prodNombre').value = '';
+  document.getElementById('prodPrecioP').value = '';
+  document.getElementById('prodPrecioPY').value = '';
+  cargarProductos();
+  renderProductos();
+}
+
+function deleteProducto(i) {
+  if(confirm('¿Borrar producto?')) {
+    productos.splice(i, 1);
+    saveData();
+    cargarProductos();
+    renderProductos();
+  }
+}
+</script>
+</body>
+</html>
