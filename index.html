@@ -191,6 +191,37 @@ table th { background: #f8f8f8; }
 .manual-product button:hover {
   background: #e68900;
 }
+.search-box-container {
+  position: relative;
+  margin-bottom: 15px;
+}
+.search-box-container .search-box {
+  width: 100%;
+  padding: 12px 40px 12px 15px;
+  margin-bottom: 0;
+}
+.clear-search {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #ccc;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.clear-search:hover {
+  background: #999;
+  color: white;
+}
 </style>
 </head>
 <body>
@@ -225,7 +256,10 @@ table th { background: #f8f8f8; }
   <div class="container">
     <div class="products" id="productsContainer">
       <div id="vistaNormal">
-        <input type="text" class="search-box" id="searchInput" placeholder="🔍 Buscar producto..." oninput="buscarProductos()">
+        <div class="search-box-container">
+  <input type="text" class="search-box" id="searchInput" placeholder="🔍 Buscar producto..." oninput="buscarProductos()">
+  <button class="clear-search" id="clearSearchBtn" onclick="limpiarBusqueda()" style="display:none;">×</button>
+</div>
         <div class="product-grid" id="productGrid"></div>
         <button class="btn-tortas-enteras" id="btnTortasEnteras" style="display:none;" onclick="abrirTortasEnteras()">
           TORTAS ENTERAS
@@ -367,6 +401,25 @@ function actualizarVista() {
 
 function buscarProductos() {
   const busqueda = document.getElementById('searchInput').value.toLowerCase();
+  renderProductos(busqueda);
+}
+
+function limpiarBusqueda() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('clearSearchBtn').style.display = 'none';
+  renderProductos();
+}
+
+function buscarProductos() {
+  const busqueda = document.getElementById('searchInput').value.toLowerCase();
+  const btnClear = document.getElementById('clearSearchBtn');
+  
+  if(busqueda.length > 0) {
+    btnClear.style.display = 'flex';
+  } else {
+    btnClear.style.display = 'none';
+  }
+  
   renderProductos(busqueda);
 }
 
@@ -708,3 +761,4 @@ function deleteProducto(i) {
 </script>
 </body>
 </html>
+
