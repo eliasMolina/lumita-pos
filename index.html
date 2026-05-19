@@ -276,7 +276,7 @@ table th { background: #f8f8f8; }
     <div class="cart">
       <h3>Carrito</h3>
       <button class="btn-envio" id="btnEnvio" style="display:none;" onclick="toggleEnvio()">
-        + Agregar Envío $2500
+        + Agregar Envío $3000
       </button>
       <div class="cart-items" id="cartItems"></div>
       <div class="total">Total: $<span id="total">0</span></div>
@@ -344,7 +344,7 @@ let carrito = [];
 let ventas = JSON.parse(localStorage.getItem('ventas')) || [];
 let ventaABorrar = null;
 let tieneEnvio = false;
-const COSTO_ENVIO = 2500;
+const COSTO_ENVIO = 3000;
 
 window.onload = function() {
   if(!modoVenta) {
@@ -524,7 +524,7 @@ function toggleEnvio() {
   if(modoVenta!== 'particular') return;
   tieneEnvio =!tieneEnvio;
   const btn = document.getElementById('btnEnvio');
-  btn.textContent = tieneEnvio? 'Quitar Envío $2500' : '+ Agregar Envío $2500';
+  btn.textContent = tieneEnvio? 'Quitar Envío $3000' : '+ Agregar Envío $3000';
   btn.classList.toggle('active');
   renderCart();
 }
@@ -568,7 +568,7 @@ function removeItem(i) {
 function clearCart() {
   carrito = [];
   tieneEnvio = false;
-  document.getElementById('btnEnvio').textContent = '+ Agregar Envío $2500';
+  document.getElementById('btnEnvio').textContent = '+ Agregar Envío $3000';
   document.getElementById('btnEnvio').classList.remove('active');
   renderCart();
 }
