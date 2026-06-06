@@ -276,7 +276,7 @@ table th { background: #f8f8f8; }
     <div class="cart">
       <h3>Carrito</h3>
       <button class="btn-envio" id="btnEnvio" style="display:none;" onclick="toggleEnvio()">
-        + Agregar Envío $3000
+        + Agregar Envío $2500
       </button>
       <div class="cart-items" id="cartItems"></div>
       <div class="total">Total: $<span id="total">0</span></div>
@@ -300,17 +300,13 @@ table th { background: #f8f8f8; }
 
 <div class="tab" id="reportes">
   <div class="report-box">
-    <h4>Reporte del Día</h4>
-    <div id="reporteDiario"></div>
-    <button class="export-btn" onclick="exportar('diario')">Descargar Excel</button>
+    <h4>Seleccionar período</h4>
+    <select id="selectorMes" onchange="cargarReportes()" style="padding:8px; width:200px; margin-right:10px;">
+    </select>
   </div>
+
   <div class="report-box">
-    <h4>Reporte Semanal</h4>
-    <div id="reporteSemanal"></div>
-    <button class="export-btn" onclick="exportar('semanal')">Descargar Excel</button>
-  </div>
-  <div class="report-box">
-    <h4>Reporte Mensual</h4>
+    <h4>Reporte del Mes</h4>
     <div id="reporteMensual"></div>
     <button class="export-btn" onclick="exportar('mensual')">Descargar Excel</button>
   </div>
@@ -344,7 +340,7 @@ let carrito = [];
 let ventas = JSON.parse(localStorage.getItem('ventas')) || [];
 let ventaABorrar = null;
 let tieneEnvio = false;
-const COSTO_ENVIO = 3000;
+const COSTO_ENVIO = 2500;
 
 window.onload = function() {
   if(!modoVenta) {
@@ -524,7 +520,7 @@ function toggleEnvio() {
   if(modoVenta!== 'particular') return;
   tieneEnvio =!tieneEnvio;
   const btn = document.getElementById('btnEnvio');
-  btn.textContent = tieneEnvio? 'Quitar Envío $3000' : '+ Agregar Envío $3000';
+  btn.textContent = tieneEnvio? 'Quitar Envío $2500' : '+ Agregar Envío $2500';
   btn.classList.toggle('active');
   renderCart();
 }
@@ -568,7 +564,7 @@ function removeItem(i) {
 function clearCart() {
   carrito = [];
   tieneEnvio = false;
-  document.getElementById('btnEnvio').textContent = '+ Agregar Envío $3000';
+  document.getElementById('btnEnvio').textContent = '+ Agregar Envío $2500';
   document.getElementById('btnEnvio').classList.remove('active');
   renderCart();
 }
@@ -596,25 +592,130 @@ function checkout(metodo) {
   clearCart();
 }
 
-function cargarReportes() {
-  const ahora = new Date();
-  const hoy = ahora.toDateString();
-  const hace7dias = new Date(ahora);
-  hace7dias.setDate(ahora.getDate() - 7);
-  const mesActual = ahora.getMonth();
-  const añoActual = ahora.getFullYear();
+function cargarSelectorMeses() {
+  const selector = document.getElementById('selectorMes');
+  const meses = [];
+  const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-  const ventasHoy = ventas.filter(v => new Date(v.fecha).toDateString() === hoy);
-  const ventasSemana = ventas.filter(v => new Date(v.fecha) >= hace7dias);
-  const ventasMes = ventas.filter(v => {
-    const f = new Date(v.fecha);
-    return f.getMonth() === mesActual && f.getFullYear() === añoActual;
+  // Obtener meses únicos de las ventas
+  ventas.forEach(v => {
+    const fecha = new Date(v.fecha);
+    const key = `${fecha.getFullYear()}-${fecha.getMonth()}`;
+    if (!meses.find(m => m.key === key)) {
+      meses.push({
+        key: key,
+        año: fecha.getFullYear(),
+        mes: fecha.getMonth(),
+        texto: `${mesesNombres[fecha.getMonth()]} ${fecha.getFullYear()}`
+      });
+    }
   });
 
-  document.getElementById('reporteDiario').innerHTML = generarReporteDetalle(ventasHoy);
-  document.getElementById('reporteSemanal').innerHTML = generarReporteDetalle(ventasSemana);
-  document.getElementById('reporteMensual').innerHTML = generarReporteDetalle(ventasMes);
+  // Ordenar de más reciente a más antiguo
+  meses.sort((a, b) => b.año - a.año || b.mes - a.mes);
+
+  // Si no hay ventas, agregar mes actual
+  if (meses.length === 0) {
+    const ahora = new Date();
+    meses.push({
+      key: `${ahora.getFullYear()}-${ahora.getMonth()}`,
+      año: ahora.getFullYear(),
+      mes: ahora.getMonth(),
+      texto: `${mesesNombres[ahora.getMonth()]} ${ahora.getFullYear()}`
+    });
+  }
+
+  selector.innerHTML = meses.map(m =>
+    `<option value="${m.key}">${m.texto}</option>`
+  ).join('');
 }
+
+function cargarReportes() {
+  const selector = document.getElementById('selectorMes');
+  if (!selector.options.length) cargarSelectorMeses();
+
+  const [año, mes] = selector.value.split('-').map(Number);
+
+  const ventasDelMes = ventas.filter(v => {
+    const f = new Date(v.fecha);
+    return f.getMonth() === mes && f.getFullYear() === año;
+  });
+
+  document.getElementById('reporteMensual').innerHTML = generarReporteDetalle(ventasDelMes);
+}
+
+function generarReporteDetalle(lista) {
+  if(lista.length === 0) return '<p>No hay ventas registradas en este período.</p>';
+
+  const total = lista.reduce((sum, v) => sum + v.total, 0);
+  const totalEnvio = lista.reduce((sum, v) => sum + (v.envio || 0), 0);
+
+  let html = '<div class="summary">';
+  html += `<div><strong>Ventas:</strong> ${lista.length}</div>`;
+  html += `<div><strong>Total:</strong> $${total}</div>`;
+  if(totalEnvio > 0) html += `<div><strong>Envío:</strong> $${totalEnvio}</div>`;
+  html += '</div>';
+
+  html += '<h4>Detalle de ventas:</h4>';
+  html += '<table><tr><th>Fecha</th><th>Hora</th><th>Modo</th><th>Método</th><th>Productos</th><th>Envío</th><th>Total</th><th></th></tr>';
+
+  lista.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(v => {
+    const fecha = new Date(v.fecha);
+    const fechaStr = fecha.toLocaleDateString('es-AR');
+    const hora = fecha.toLocaleTimeString('es-AR', {hour: '2-digit', minute: '2-digit'});
+    const productos = v.items.map(i => `${i.nombre} x${i.cant}`).join(', ');
+    html += `
+      <tr>
+        <td>${fechaStr}</td>
+        <td>${hora}</td>
+        <td>${v.modoVenta}</td>
+        <td>${v.metodo}</td>
+        <td>${productos}</td>
+        <td>${v.envio > 0? '$'+v.envio : '-'}</td>
+        <td><strong>$${v.total}</strong></td>
+        <td><button class="delete-btn" onclick="pedirPassword(${v.id})">Borrar</button></td>
+      </tr>
+    `;
+  });
+  html += '</table>';
+  return html;
+}
+
+function exportar(periodo) {
+  const selector = document.getElementById('selectorMes');
+  const [año, mes] = selector.value.split('-').map(Number);
+
+  const lista = ventas.filter(v => {
+    const f = new Date(v.fecha);
+    return f.getMonth() === mes && f.getFullYear() === año;
+  });
+
+  if(lista.length === 0) return alert('No hay ventas para exportar');
+
+  const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const nombreArchivo = `ventas_${mesesNombres[mes].toLowerCase()}_${año}`;
+
+  let csv = 'Fecha,Hora,Modo Venta,Metodo Pago,Producto,Cantidad,Precio Unitario,Subtotal,Envio,Total Venta\n';
+  lista.forEach(v => {
+    const fecha = new Date(v.fecha);
+    const fechaStr = fecha.toLocaleDateString();
+    const horaStr = fecha.toLocaleTimeString();
+    v.items.forEach(item => {
+      csv += `${fechaStr},${horaStr},${v.modoVenta},${v.metodo},${item.nombre},${item.cant},${item.precio},${item.precio*item.cant},${v.envio || 0},${v.total}\n`;
+    });
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = nombreArchivo + '.csv';
+  link.click();
+}
+
+// Llama esto en showTab cuando entras a reportes
+// Ya está en tu código: if(tab === 'reportes') cargarReportes();
 
 function generarReporteDetalle(lista) {
   if(lista.length === 0) return '<p>No hay ventas registradas.</p>';
