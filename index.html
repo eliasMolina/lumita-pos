@@ -684,6 +684,11 @@ function generarReporteDetalle(lista) {
 
 function exportar(periodo) {
   const selector = document.getElementById('selectorMes');
+  if (!selector ||!selector.value) {
+    alert('Seleccioná un mes primero');
+    return;
+  }
+
   const [año, mes] = selector.value.split('-').map(Number);
 
   const lista = ventas.filter(v => {
@@ -779,37 +784,32 @@ function confirmarBorrado() {
 }
 
 function exportar(periodo) {
-  const ahora = new Date();
-  let lista = [];
-  let nombreArchivo = '';
+  const selector = document.getElementById('selectorMes');
+  if (!selector ||!selector.value) {
+    alert('Seleccioná un mes primero');
+    return;
+  }
 
-  if(periodo === 'diario') {
-    lista = ventas.filter(v => new Date(v.fecha).toDateString() === ahora.toDateString());
-    nombreArchivo = `ventas_diario_${ahora.toISOString().split('T')[0]}`;
-  }
-  if(periodo === 'semanal') {
-    const hace7dias = new Date(ahora);
-    hace7dias.setDate(ahora.getDate() - 7);
-    lista = ventas.filter(v => new Date(v.fecha) >= hace7dias);
-    nombreArchivo = `ventas_semanal_${ahora.toISOString().split('T')[0]}`;
-  }
-  if(periodo === 'mensual') {
-    lista = ventas.filter(v => {
-      const f = new Date(v.fecha);
-      return f.getMonth() === ahora.getMonth() && f.getFullYear() === ahora.getFullYear();
-    });
-    nombreArchivo = `ventas_mensual_${ahora.getFullYear()}-${ahora.getMonth()+1}`;
-  }
+  const [año, mes] = selector.value.split('-').map(Number);
+
+  let lista = ventas.filter(v => {
+    const f = new Date(v.fecha);
+    return f.getMonth() === mes && f.getFullYear() === año;
+  });
 
   if(lista.length === 0) return alert('No hay ventas para exportar');
+
+  const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const nombreArchivo = `ventas_${mesesNombres[mes].toLowerCase()}_${año}`;
 
   let csv = 'Fecha,Hora,Modo Venta,Metodo Pago,Producto,Cantidad,Precio Unitario,Subtotal,Envio,Total Venta\n';
   lista.forEach(v => {
     const fecha = new Date(v.fecha);
-    const fechaStr = fecha.toLocaleDateString();
-    const horaStr = fecha.toLocaleTimeString();
+    const fechaStr = fecha.toLocaleDateString('es-AR');
+    const horaStr = fecha.toLocaleTimeString('es-AR', {hour: '2-digit', minute: '2-digit'});
     v.items.forEach(item => {
-      csv += `${fechaStr},${horaStr},${v.modoVenta},${v.metodo},${item.nombre},${item.cant},${item.precio},${item.precio*item.cant},${v.envio || 0},${v.total}\n`;
+      csv += `${fechaStr},${horaStr},${v.modoVenta},${v.metodo},"${item.nombre}",${item.cant},${item.precio},${item.precio*item.cant},${v.envio || 0},${v.total}\n`;
     });
   });
 
