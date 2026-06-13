@@ -58,7 +58,6 @@ header { background: #d63384; color: white; padding: 15px; text-align: center; f
   z-index: 0;
 }
 
-/* FIX: Esto hace que el botón quede clickeable sobre la imagen */
 .cart > * {
   position: relative;
   z-index: 1;
@@ -159,7 +158,6 @@ table th { background: #f8f8f8; }
 .summary { display: flex; gap: 20px; margin-bottom: 15px; }
 .summary div { background: #f8f8f8; padding: 10px; border-radius: 6px; flex: 1; }
 
-/* Producto manual */
 .manual-product {
   border-top: 1px solid #ddd;
   padding-top: 10px;
@@ -281,7 +279,6 @@ table th { background: #f8f8f8; }
       <div class="cart-items" id="cartItems"></div>
       <div class="total">Total: $<span id="total">0</span></div>
       
-      <!-- PRODUCTO MANUAL -->
       <div class="manual-product">
         <h4>Producto manual</h4>
         <input type="text" id="manualNombre" placeholder="Nombre del producto">
@@ -395,11 +392,6 @@ function actualizarVista() {
   renderProductos();
 }
 
-function buscarProductos() {
-  const busqueda = document.getElementById('searchInput').value.toLowerCase();
-  renderProductos(busqueda);
-}
-
 function limpiarBusqueda() {
   document.getElementById('searchInput').value = '';
   document.getElementById('clearSearchBtn').style.display = 'none';
@@ -493,7 +485,6 @@ function addToCart(id) {
   renderCart();
 }
 
-// PRODUCTO MANUAL
 function addManualProduct() {
   const nombre = document.getElementById('manualNombre').value.trim();
   const precio = parseFloat(document.getElementById('manualPrecio').value);
@@ -598,7 +589,6 @@ function cargarSelectorMeses() {
   const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
                         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-  // Obtener meses únicos de las ventas
   ventas.forEach(v => {
     const fecha = new Date(v.fecha);
     const key = `${fecha.getFullYear()}-${fecha.getMonth()}`;
@@ -612,10 +602,8 @@ function cargarSelectorMeses() {
     }
   });
 
-  // Ordenar de más reciente a más antiguo
   meses.sort((a, b) => b.año - a.año || b.mes - a.mes);
 
-  // Si no hay ventas, agregar mes actual
   if (meses.length === 0) {
     const ahora = new Date();
     meses.push({
@@ -658,17 +646,22 @@ function generarReporteDetalle(lista) {
   html += '</div>';
 
   html += '<h4>Detalle de ventas:</h4>';
-  html += '<table><tr><th>Fecha</th><th>Hora</th><th>Modo</th><th>Método</th><th>Productos</th><th>Envío</th><th>Total</th><th></th></tr>';
+  html += '<table><tr><th>Fecha y Hora</th><th>Modo</th><th>Método</th><th>Productos</th><th>Envío</th><th>Total</th><th></th></tr>';
 
   lista.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(v => {
     const fecha = new Date(v.fecha);
-    const fechaStr = fecha.toLocaleDateString('es-AR');
-    const hora = fecha.toLocaleTimeString('es-AR', {hour: '2-digit', minute: '2-digit'});
+    const fechaHora = fecha.toLocaleString('es-AR', {
+      weekday: 'short',
+      day: '2-digit', 
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
     const productos = v.items.map(i => `${i.nombre} x${i.cant}`).join(', ');
     html += `
       <tr>
-        <td>${fechaStr}</td>
-        <td>${hora}</td>
+        <td>${fechaHora}</td>
         <td>${v.modoVenta}</td>
         <td>${v.metodo}</td>
         <td>${productos}</td>
@@ -691,7 +684,7 @@ function exportar(periodo) {
 
   const [año, mes] = selector.value.split('-').map(Number);
 
-  const lista = ventas.filter(v => {
+  let lista = ventas.filter(v => {
     const f = new Date(v.fecha);
     return f.getMonth() === mes && f.getFullYear() === año;
   });
@@ -702,13 +695,18 @@ function exportar(periodo) {
                         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   const nombreArchivo = `ventas_${mesesNombres[mes].toLowerCase()}_${año}`;
 
-  let csv = 'Fecha,Hora,Modo Venta,Metodo Pago,Producto,Cantidad,Precio Unitario,Subtotal,Envio,Total Venta\n';
+  let csv = 'Fecha y Hora,Modo Venta,Metodo Pago,Producto,Cantidad,Precio Unitario,Subtotal,Envio,Total Venta\n';
   lista.forEach(v => {
     const fecha = new Date(v.fecha);
-    const fechaStr = fecha.toLocaleDateString();
-    const horaStr = fecha.toLocaleTimeString();
+    const fechaHora = fecha.toLocaleString('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
     v.items.forEach(item => {
-      csv += `${fechaStr},${horaStr},${v.modoVenta},${v.metodo},${item.nombre},${item.cant},${item.precio},${item.precio*item.cant},${v.envio || 0},${v.total}\n`;
+      csv += `"${fechaHora}",${v.modoVenta},${v.metodo},"${item.nombre}",${item.cant},${item.precio},${item.precio*item.cant},${v.envio || 0},${v.total}\n`;
     });
   });
 
@@ -717,44 +715,6 @@ function exportar(periodo) {
   link.href = URL.createObjectURL(blob);
   link.download = nombreArchivo + '.csv';
   link.click();
-}
-
-// Llama esto en showTab cuando entras a reportes
-// Ya está en tu código: if(tab === 'reportes') cargarReportes();
-
-function generarReporteDetalle(lista) {
-  if(lista.length === 0) return '<p>No hay ventas registradas.</p>';
-
-  const total = lista.reduce((sum, v) => sum + v.total, 0);
-  const totalEnvio = lista.reduce((sum, v) => sum + (v.envio || 0), 0);
-
-  let html = '<div class="summary">';
-  html += `<div><strong>Ventas:</strong> ${lista.length}</div>`;
-  html += `<div><strong>Total:</strong> $${total}</div>`;
-  if(totalEnvio > 0) html += `<div><strong>Envío:</strong> $${totalEnvio}</div>`;
-  html += '</div>';
-
-  html += '<h4>Detalle de ventas:</h4>';
-  html += '<table><tr><th>Hora</th><th>Modo</th><th>Método</th><th>Productos</th><th>Envío</th><th>Total</th><th></th></tr>';
-
-  lista.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(v => {
-    const fecha = new Date(v.fecha);
-    const hora = fecha.toLocaleTimeString('es-AR', {hour: '2-digit', minute: '2-digit'});
-    const productos = v.items.map(i => `${i.nombre} x${i.cant}`).join(', ');
-    html += `
-      <tr>
-        <td>${hora}</td>
-        <td>${v.modoVenta}</td>
-        <td>${v.metodo}</td>
-        <td>${productos}</td>
-        <td>${v.envio > 0? '$'+v.envio : '-'}</td>
-        <td><strong>$${v.total}</strong></td>
-        <td><button class="delete-btn" onclick="pedirPassword(${v.id})">Borrar</button></td>
-      </tr>
-    `;
-  });
-  html += '</table>';
-  return html;
 }
 
 function pedirPassword(id) {
@@ -781,43 +741,6 @@ function confirmarBorrado() {
     alert('Contraseña incorrecta');
     document.getElementById('passInput').value = '';
   }
-}
-
-function exportar(periodo) {
-  const selector = document.getElementById('selectorMes');
-  if (!selector ||!selector.value) {
-    alert('Seleccioná un mes primero');
-    return;
-  }
-
-  const [año, mes] = selector.value.split('-').map(Number);
-
-  let lista = ventas.filter(v => {
-    const f = new Date(v.fecha);
-    return f.getMonth() === mes && f.getFullYear() === año;
-  });
-
-  if(lista.length === 0) return alert('No hay ventas para exportar');
-
-  const mesesNombres = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-  const nombreArchivo = `ventas_${mesesNombres[mes].toLowerCase()}_${año}`;
-
-  let csv = 'Fecha,Hora,Modo Venta,Metodo Pago,Producto,Cantidad,Precio Unitario,Subtotal,Envio,Total Venta\n';
-  lista.forEach(v => {
-    const fecha = new Date(v.fecha);
-    const fechaStr = fecha.toLocaleDateString('es-AR');
-    const horaStr = fecha.toLocaleTimeString('es-AR', {hour: '2-digit', minute: '2-digit'});
-    v.items.forEach(item => {
-      csv += `${fechaStr},${horaStr},${v.modoVenta},${v.metodo},"${item.nombre}",${item.cant},${item.precio},${item.precio*item.cant},${v.envio || 0},${v.total}\n`;
-    });
-  });
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = nombreArchivo + '.csv';
-  link.click();
 }
 
 function cargarProductos() {
