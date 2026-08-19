@@ -155,6 +155,7 @@ table th { background: #f8f8f8; }
 .mode-badge { background: #d63384; color: white; padding: 5px 10px; border-radius: 20px; font-size: 14px; display: inline-block; margin-bottom: 10px; }
 .export-btn { background: #17a2b8; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; margin-top: 10px; margin-right: 5px; }
 .delete-btn { background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+.edit-btn { background: #ffc107; color: #333; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px; }
 .summary { display: flex; gap: 20px; margin-bottom: 15px; }
 .summary div { background: #f8f8f8; padding: 10px; border-radius: 6px; flex: 1; }
 
@@ -193,7 +194,7 @@ table th { background: #f8f8f8; }
   position: relative;
   margin-bottom: 15px;
 }
-.search-box-container .search-box {
+.search-box-container.search-box {
   width: 100%;
   padding: 12px 40px 12px 15px;
   margin-bottom: 0;
@@ -278,7 +279,7 @@ table th { background: #f8f8f8; }
       </button>
       <div class="cart-items" id="cartItems"></div>
       <div class="total">Total: $<span id="total">0</span></div>
-      
+
       <div class="manual-product">
         <h4>Producto manual</h4>
         <input type="text" id="manualNombre" placeholder="Nombre del producto">
@@ -401,13 +402,13 @@ function limpiarBusqueda() {
 function buscarProductos() {
   const busqueda = document.getElementById('searchInput').value.toLowerCase();
   const btnClear = document.getElementById('clearSearchBtn');
-  
+
   if(busqueda.length > 0) {
     btnClear.style.display = 'flex';
   } else {
     btnClear.style.display = 'none';
   }
-  
+
   renderProductos(busqueda);
 }
 
@@ -489,7 +490,7 @@ function addManualProduct() {
   const nombre = document.getElementById('manualNombre').value.trim();
   const precio = parseFloat(document.getElementById('manualPrecio').value);
 
-  if (!nombre || !precio || precio <= 0) {
+  if (!nombre ||!precio || precio <= 0) {
     alert('Completá nombre y precio válido');
     return;
   }
@@ -525,7 +526,7 @@ function renderCart() {
   document.getElementById('btnEnvio').style.display = (modoVenta === 'particular')? 'block' : 'none';
 
   carrito.forEach((item, i) => {
-    const claseExtra = item.manual ? 'manual' : '';
+    const claseExtra = item.manual? 'manual' : '';
     div.innerHTML += `
       <div class="cart-item ${claseExtra}">
         <span>${item.nombre} x${item.cant}</span>
@@ -652,7 +653,7 @@ function generarReporteDetalle(lista) {
     const fecha = new Date(v.fecha);
     const fechaHora = fecha.toLocaleString('es-AR', {
       weekday: 'short',
-      day: '2-digit', 
+      day: '2-digit',
       month: 'short',
       year: 'numeric',
       hour: '2-digit',
@@ -753,10 +754,37 @@ function cargarProductos() {
         <td>${p.categoria === 'tortas_enteras'? 'Tortas Enteras' : 'Normal'}</td>
         <td>$${p.precioParticular}</td>
         <td>$${p.precioPedidos}</td>
-        <td><button onclick="deleteProducto(${i})" style="background:#dc3545; color:white; border:none; padding:5px 10px; border-radius:5px;">Borrar</button></td>
+        <td>
+          <button onclick="editarProducto(${i})" class="edit-btn">Editar</button>
+          <button onclick="deleteProducto(${i})" class="delete-btn">Borrar</button>
+        </td>
       </tr>
     `;
   });
+}
+
+function editarProducto(i) {
+  const prod = productos[i];
+  const nuevoPrecioP = prompt(`Nuevo precio Particular para "${prod.nombre}":`, prod.precioParticular);
+  if(nuevoPrecioP === null) return;
+
+  const nuevoPrecioPY = prompt(`Nuevo precio Pedidos Ya para "${prod.nombre}":`, prod.precioPedidos);
+  if(nuevoPrecioPY === null) return;
+
+  const precioP = parseFloat(nuevoPrecioP);
+  const precioPY = parseFloat(nuevoPrecioPY);
+
+  if(isNaN(precioP) || isNaN(precioPY) || precioP < 0 || precioPY < 0) {
+    alert('Ingresá precios válidos');
+    return;
+  }
+
+  productos[i].precioParticular = precioP;
+  productos[i].precioPedidos = precioPY;
+  saveData();
+  cargarProductos();
+  renderProductos();
+  alert('Precio actualizado correctamente');
 }
 
 function addProducto() {
